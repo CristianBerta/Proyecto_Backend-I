@@ -31,7 +31,7 @@ cartsRouter.delete("/:cid/product/:pid", (req, res) => {
     res.send({"estado":"OK", "mensaje":"Se eliminó el Producto al Carrito!"});
 });
 
-export default cartsRouter
+export default cartsRouter;
 
 //--//
 // router.delete("/:cid/products/:pid", async (req, res) => {

@@ -1,37 +1,88 @@
 import { Router } from "express";
-import { productsModel } from "../models/products.model.js";
+//import { productsModel } from "../models/products.model.js";
+import ProductManager from "../clases/ProductManager.js";
 
-const router = Router();
+const productRouter = Router();
+const PM = new ProductManager();
 
-router.get("/", async (req, res) => {
-    const { limit = 10, page = 1, sort, query } = req.query;
-    
-    const filter = query ? { $or: [{ category: query }, { status: query === "true" }] } : {};
-
-    const options = {
-        limit: parseInt(limit),
-        page: parseInt(page),
-        sort: sort ? { price: sort === "asc" ? 1 : -1 } : {},
-    };
-
-    const products = await productsModel.paginate(filter, options);
-
-    res.json({
-        status: "success",
-        payload: products.docs,
-        totalPages: products.totalPages,
-        prevPage: products.prevPage,
-        nextPage: products.nextPage,
-        page: products.page,
-        hasPrevPage: products.hasPrevPage,
-        hasNextPage: products.hasNextPage,
-        prevLink: products.hasPrevPage ? `/api/products?page=${products.prevPage}` : null,
-        nextLink: products.hasNextPage ? `/api/products?page=${products.nextPage}` : null,
-    });
+productsRouter.get("/", async (req, res) => {
+    try {
+        const products = PM.getProducts();
+        res.send(products);
+    } catch (error){
+        res.send({error:"Productos no encontrados"});
+        //console.log("Productos no encontrados");
+    }
 });
 
-export default router;
+productsRouter.get("/:pid", (req, res) => {
+    const product = PM.getProductById(Number(req.params.pid));
+    if (product) {
+        res.send(product);
+    } else {
+        res.status(404).send({ error: "Producto no encontrado" });
+    }
+});
 
+productsRouter.post("/", (req, res) => {
+    const { title, description, code, price, status, stock, category, thumbnails } = req.body;
+    if (!title || !description || !code || !price || !stock || !category) {
+        return res.status(400).send({ error: "Faltan campos obligatorios" });
+    }
+    const newProduct = PM.addProduct({ title, description, code, price, status, stock, category, thumbnails });
+    res.status(201).send(newProduct);
+});
+
+productsRouter.put("/:pid", (req, res) => {
+    const pid = req.params.pid;
+    const { title, description, code, price, status, stock, category, thumbnails } = req.body;
+    if (!title || !description || !code || !price || !stock || !category) {
+        return res.status(400).send({ error: "Faltan campos obligatorios" });
+    }
+    const newProduct = PM.editProduct(pid, { title, description, code, price, status, stock, category, thumbnails });
+    res.status(201).send(newProduct);
+});
+
+productsRouter.delete("/:pid", (req, res) => {
+    const deleted = PM.deleteProduct(Number(req.params.pid));
+    if (deleted) {
+        res.send({ message: "Producto eliminado" });
+    } else {
+        res.status(404).send({ error: "Producto no encontrado" });
+    }
+});
+
+export default productsRouter;
+
+//--------------//
+// router.get("/", async (req, res) => {
+//     const { limit = 10, page = 1, sort, query } = req.query;
+    
+//     const filter = query ? { $or: [{ category: query }, { status: query === "true" }] } : {};
+
+//     const options = {
+//         limit: parseInt(limit),
+//         page: parseInt(page),
+//         sort: sort ? { price: sort === "asc" ? 1 : -1 } : {},
+//     };
+
+//     const products = await productsModel.paginate(filter, options);
+
+//     res.json({
+//         status: "success",
+//         payload: products.docs,
+//         totalPages: products.totalPages,
+//         prevPage: products.prevPage,
+//         nextPage: products.nextPage,
+//         page: products.page,
+//         hasPrevPage: products.hasPrevPage,
+//         hasNextPage: products.hasNextPage,
+//         prevLink: products.hasPrevPage ? `/api/products?page=${products.prevPage}` : null,
+//         nextLink: products.hasNextPage ? `/api/products?page=${products.nextPage}` : null,
+//     });
+// });
+
+//-----------------------//
 // import { Router } from "express";
 // import ProductManager from "../clases/ProductManager.js";
 

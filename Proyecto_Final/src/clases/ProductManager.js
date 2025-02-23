@@ -1,21 +1,48 @@
 // import fs from "fs";
+import { productsModel } from "../models/products.model";
 
-// class ProductManager {
-//     constructor() {
-//         this.file = "products.json";
-//         if (!fs.existsSync(this.file)) {
-//             fs.writeFileSync(this.file, JSON.stringify([]));
-//         }
-//     }
+class ProductManager {
+    //     constructor() {
+    //         this.file = "products.json";
+    //         if (!fs.existsSync(this.file)) {
+    //             fs.writeFileSync(this.file, JSON.stringify([]));
+    //         }
+    //     }
 
-//     getProducts() {
-//         return JSON.parse(fs.readFileSync(this.file, "utf-8"));
-//     }
+    //     getProducts() {
+    //         return JSON.parse(fs.readFileSync(this.file, "utf-8"));
+    //     }
+
+    async getProducts(limit, page, query, sort) {
+        try {
+            limit = limit ? limit : 10;
+            page = page >= 1 ? page : 1;
+            query = query ? query : "";
+            sort = sort ? sort : "asc";
+            let result;
+
+            if (query) {
+                result = await productsModel.paginate({ category: query }, { limit: limit, page: page, sort: sort, lean: true });
+            } else {
+                result = await productsModel.paginate({}, { limit: limit, page: page, sort: sort, lean: true });
+            }
+
+            result = { status: "success", payload: result.docs, totalPages: result.totalPages, prevPage: result.prevPage, nextPage: result.nextPage, page: result.page, hasPrevPage: result.hasPrevPage, hasNextPage: result.hasNextPage, prevLink: (result.hasPrevPage ? "/?limit=" + limit + "&page=" + (result.page - 1) : null), nextLink: (result.hasNextPage ? "/?limit=" + limit + "&page=" + (result.page + 1) : null) };
+
+            return result;
+        } catch (error) {
+            return { status: "error", payload: "" }
+        }
+    }
 
 //     getProductById(id) {
 //         const products = this.getProducts();
 //         return products.find((product) => product.id === id);
 //     }
+    async getProductById(id) {
+        const products = await productsModel.find({_id:id});
+        return products ? products : {"error":"No se encontró el Producto!"};
+    }
 
 //     addProduct(product) {
 //         const products = this.getProducts();
@@ -24,6 +51,9 @@
 //         fs.writeFileSync(this.file, JSON.stringify(products));
 //         return product;
 //     }
+    async addProduct(product) {
+        await productsModel.create({...product});
+    }
 
 //     updateProduct(id, updatedFields) {
 //         const products = this.getProducts();
@@ -36,6 +66,9 @@
 //         }
 //         return null;
 //     }
+    async editProduct(id, product){
+        await productsModel.updateOne({_id:id},{...product});
+    }
 
 //     deleteProduct(id) {
 //         const products = this.getProducts();
@@ -43,6 +76,9 @@
 //         fs.writeFileSync(this.file, JSON.stringify(filteredProducts));
 //         return products.length !== filteredProducts.length;
 //     }
-// }
+    async deleteProduct(id){
+        await productsModel.deleteOne({_id:id});
+    }
+}
 
-// export default ProductManager;
+export default ProductManager

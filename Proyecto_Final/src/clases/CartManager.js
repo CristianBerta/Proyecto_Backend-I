@@ -1,45 +1,77 @@
 // import fs from "fs";
+import { cartModel } from "../models/cart.model";
 
-// class CartManager {
-//     constructor() {
-//         this.file = "carts.json";
-//         if (!fs.existsSync(this.file)) {
-//             fs.writeFileSync(this.file, JSON.stringify([]));
-//         }
-//     }
+class CartManager {
+    //     constructor() {
+    //         this.file = "carts.json";
+    //         if (!fs.existsSync(this.file)) {
+    //             fs.writeFileSync(this.file, JSON.stringify([]));
+    //         }
+    //     }
 
-//     getCarts() {
-//         return JSON.parse(fs.readFileSync(this.file, "utf-8"));
-//     }
+    //     getCarts() {
+    //         return JSON.parse(fs.readFileSync(this.file, "utf-8"));
+    //     }
+    async getCarts() {
+        return await cartModel.find().lean().populate("products.product");
+    }
 
-//     getCartById(id) {
-//         const carts = this.getCarts();
-//         return carts.find((cart) => cart.id === id);
-//     }
+    //     getCartById(id) {
+    //         const carts = this.getCarts();
+    //         return carts.find((cart) => cart.id === id);
+    //     }
+    async getCartById(id) {
+        return await cartModel.find({ _id: id }).lean();
+    }
 
-//     createCart() {
-//         const carts = this.getCarts();
-//         const newCart = { id: carts.length > 0 ? carts[carts.length - 1].id + 1 : 1, products: [] };
-//         carts.push(newCart);
-//         fs.writeFileSync(this.file, JSON.stringify(carts));
-//         return newCart;
-//     }
+    //     createCart() {
+    //         const carts = this.getCarts();
+    //         const newCart = { id: carts.length > 0 ? carts[carts.length - 1].id + 1 : 1, products: [] };
+    //         carts.push(newCart);
+    //         fs.writeFileSync(this.file, JSON.stringify(carts));
+    //         return newCart;
+    //     }
+    async createCart() {
+        await cartModel.create({ products: [] });
+    }
 
-//     addProductToCart(cartId, productId) {
-//         const carts = this.getCarts();
-//         const cart = carts.find((cart) => cart.id === cartId);
-//         if (cart) {
-//             const product = cart.products.find((prod) => prod.product === productId);
-//             if (product) {
-//                 product.quantity++;
-//             } else {
-//                 cart.products.push({ product: productId, quantity: 1 });
-//             }
-//             fs.writeFileSync(this.file, JSON.stringify(carts));
-//             return cart;
-//         }
-//         return null;
-//     }
-// }
+    //     addProductToCart(cartId, productId) {
+    //         const carts = this.getCarts();
+    //         const cart = carts.find((cart) => cart.id === cartId);
+    //         if (cart) {
+    //             const product = cart.products.find((prod) => prod.product === productId);
+    //             if (product) {
+    //                 product.quantity++;
+    //             } else {
+    //                 cart.products.push({ product: productId, quantity: 1 });
+    //             }
+    //             fs.writeFileSync(this.file, JSON.stringify(carts));
+    //             return cart;
+    //         }
+    //         return null;
+    //     }
+    async addProductToCart(cid, pid) {
+        let cart = await cartModel.findOne({ _id: cid }).lean();
+        let product = cart.products.find(item => item.product == pid);
 
-// export default CartManager;
+        if (product) {
+            product.quantity += 1;
+        } else {
+            product = { product: pid, quantity: 1 };
+            cart.products.push(product);
+        }
+
+        await cartModel.updateOne({ _id: cid }, { products: cart.products });
+    }
+
+    async deleteProductFromCart(cid, pid) {
+        let cart = await cartModel.findOne({_id:cid}).lean();
+        let products = cart.products.filter(item => item._id != pid);
+        console.log(products);
+        
+
+        await cartModel.updateOne({_id:cid}, {products:products});
+    }
+}
+
+export default CartManager

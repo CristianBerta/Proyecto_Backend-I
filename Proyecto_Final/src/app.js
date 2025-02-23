@@ -1,28 +1,22 @@
 import express from "express";
 import handlebars from "express-handlebars";
 import { Server } from "socket.io";
-import mongoose from "mongoose";
-import dotenv from "dotenv";
+//import dotenv from "dotenv";
 import __dirname from "./utils.js";
-import productsRouter from "./routes/productsRouter.js";
-import cartsRouter from "./routes/cartsRouter.js";
-import viewsRouter from "./routes/viewsRouter.js";
+import productsRouter from "./routers/productsRouter.js";
+import cartsRouter from "./routers/cartsRouter.js";
+import viewsRouter from "./routers/viewsRouter.js";
+import ProductManager from "./clases/ProductManager.js"
+import mongoose from "mongoose";
 
-dotenv.config();
+//dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 8080;
-
-mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-}).then(() => console.log("🟢 Conectado a MongoDB Atlas"))
-.catch(err => console.error("🔴 Error conectando a MongoDB:", err));
-
+//const port = process.env.PORT || 8080;
+const port = 8080;
 const httpServer = app.listen(port, () => {
     console.log("Servidor activo en el puerto: " + port);
-});
-
+})
 const socketServer = new Server(httpServer);
 
 app.engine("handlebars", handlebars.engine());
@@ -37,10 +31,33 @@ app.use("/api/products", productsRouter);
 app.use("/api/carts", cartsRouter);
 app.use("/", viewsRouter);
 
-socketServer.on("connection", (socket) => {
-    console.log("🟢 Usuario conectado vía WebSocket");
+mongoose.connect("mongodb+srv://cristian:Adidas88!@cluster0.ehtm7.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0");
+
+// socketServer.on("connection", (socket) => {
+//    console.log("🟢 Usuario conectado vía WebSocket");
+// });
+
+const PM = new ProductManager();
+
+socketServer.on("connection", socket => {
+    console.log("Nuevo cliente conectado");
+
+    socket.emit("realtimeproducts", PM.getProducts());
+
+    socket.on("nuevoProducto", data => {
+        PM.addProduct(data);
+        console.log("Se agregó un nuevo producto!");
+        socketServer.emit("realtimeproducts", PM.getProducts());
+    });
+
+    socket.on("eliminarProducto", id => {
+        PM.deleteProduct(id);
+        console.log("Se eliminó un producto!");
+        socketServer.emit("realtimeproducts", PM.getProducts());
+    });
 });
 
+//-------------------------------------------//
 // import express from "express";
 // import handlebars from "express-handlebars";
 // import { Server } from "socket.io";

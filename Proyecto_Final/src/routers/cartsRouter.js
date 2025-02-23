@@ -1,60 +1,91 @@
 import { Router } from "express";
-import { cartModel } from "../models/cart.model.js";
+//import { cartModel } from "../models/cart.model.js";
+import CartManager from "../clases/CartManager";
 
-const router = Router();
+const cartsRouter = Router();
+const CM = new CartManager();
 
-router.delete("/:cid/products/:pid", async (req, res) => {
-    const { cid, pid } = req.params;
-
-    const cart = await cartModel.findById(cid);
-    if (!cart) return res.status(404).json({ error: "Carrito no encontrado" });
-
-    cart.products = cart.products.filter(p => p.product.toString() !== pid);
-    await cart.save();
-
-    res.json({ status: "success", cart });
+cartsRouter.post("/", (req, res) => {
+    const newCart = CM.createCart();
+    res.send({"estado":"OK", "mensaje":"El carrito se creó correctamente!"});
 });
 
-router.put("/:cid", async (req, res) => {
-    const { cid } = req.params;
-    const { products } = req.body;
-
-    const cart = await cartModel.findByIdAndUpdate(cid, { products }, { new: true });
-    res.json({ status: "success", cart });
+cartsRouter.get("/:cid", (req, res) => {
+    const cid = req.params.cid;
+    const cart = CM.getCartById(cid);
+    
+    res.send(cart);
 });
 
-router.put("/:cid/products/:pid", async (req, res) => {
-    const { cid, pid } = req.params;
-    const { quantity } = req.body;
-
-    const cart = await cartModel.findById(cid);
-    if (!cart) return res.status(404).json({ error: "Carrito no encontrado" });
-
-    const productIndex = cart.products.findIndex(p => p.product.toString() === pid);
-    if (productIndex !== -1) {
-        cart.products[productIndex].quantity = quantity;
-    }
-    await cart.save();
-
-    res.json({ status: "success", cart });
+cartsRouter.post("/:cid/product/:pid", (req, res) => {
+    const cid = req.params.cid;
+    const pid = req.params.pid;
+    CM.addCartProduct(cid, pid);
+    res.send({"estado":"OK", "mensaje":"Se agregó el Producto al Carrito!"});
 });
 
-router.delete("/:cid", async (req, res) => {
-    const { cid } = req.params;
-
-    await cartModel.findByIdAndUpdate(cid, { products: [] });
-    res.json({ status: "success", message: "Carrito vaciado" });
+cartsRouter.delete("/:cid/product/:pid", (req, res) => {
+    const cid = req.params.cid;
+    const pid = req.params.pid;
+    CM.deleteProductFromCart(cid, pid);
+    res.send({"estado":"OK", "mensaje":"Se eliminó el Producto al Carrito!"});
 });
 
-router.get("/:cid", async (req, res) => {
-    const { cid } = req.params;
+export default cartsRouter
 
-    const cart = await cartModel.findById(cid).populate("products.product");
-    res.json({ status: "success", cart });
-});
+//--//
+// router.delete("/:cid/products/:pid", async (req, res) => {
+//     const { cid, pid } = req.params;
 
-export default router;
+//     const cart = await cartModel.findById(cid);
+//     if (!cart) return res.status(404).json({ error: "Carrito no encontrado" });
 
+//     cart.products = cart.products.filter(p => p.product.toString() !== pid);
+//     await cart.save();
+
+//     res.json({ status: "success", cart });
+// });
+
+// router.put("/:cid", async (req, res) => {
+//     const { cid } = req.params;
+//     const { products } = req.body;
+
+//     const cart = await cartModel.findByIdAndUpdate(cid, { products }, { new: true });
+//     res.json({ status: "success", cart });
+// });
+
+// router.put("/:cid/products/:pid", async (req, res) => {
+//     const { cid, pid } = req.params;
+//     const { quantity } = req.body;
+
+//     const cart = await cartModel.findById(cid);
+//     if (!cart) return res.status(404).json({ error: "Carrito no encontrado" });
+
+//     const productIndex = cart.products.findIndex(p => p.product.toString() === pid);
+//     if (productIndex !== -1) {
+//         cart.products[productIndex].quantity = quantity;
+//     }
+//     await cart.save();
+
+//     res.json({ status: "success", cart });
+// });
+
+// router.delete("/:cid", async (req, res) => {
+//     const { cid } = req.params;
+
+//     await cartModel.findByIdAndUpdate(cid, { products: [] });
+//     res.json({ status: "success", message: "Carrito vaciado" });
+// });
+
+// router.get("/:cid", async (req, res) => {
+//     const { cid } = req.params;
+
+//     const cart = await cartModel.findById(cid).populate("products.product");
+//     res.json({ status: "success", cart });
+// });
+
+
+//-----------------------------//
 // import { Router } from "express";
 // import CartManager from "../clases/CartManager.js";
 

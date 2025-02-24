@@ -2,7 +2,7 @@ import { Router } from "express";
 //import { productsModel } from "../models/products.model.js";
 import ProductManager from "../clases/ProductManager.js";
 
-const productRouter = Router();
+const productsRouter = Router();
 const PM = new ProductManager();
 
 productsRouter.get("/", async (req, res) => {

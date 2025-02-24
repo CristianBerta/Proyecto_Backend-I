@@ -1,14 +1,15 @@
 import { Router } from "express";
 //import { productsModel } from "../models/products.model.js";
 //import { cartModel } from "../models/cart.model.js";
-import ProductManager from "../clases/ProductManager";
+import ProductManager from "../clases/ProductManager.js";
 
 const viewsRouter = Router();
 const PM = new ProductManager();
 
-router.get("/", (req, res) => {
+viewsRouter.get("/", async (req, res) => {
     const { limit, page, query, sort } = req.query;
-    const products = PM.getProducts(limit, page, query, sort);
+    const products = await PM.getProducts(limit, page, query, sort);
+    
     res.render("index", { products });
 });
 
@@ -16,17 +17,17 @@ viewsRouter.get("/products/", async (req, res) => {
     const { limit, page, query, sort } = req.query;
     let products = await PM.getProducts(limit, page, query, sort);
 
-    res.render("index", { products });
+    res.render("products", { products });
 });
 
 viewsRouter.get("/products/:pid", async (req, res) => {
     const { pid } = req.params;
     let product = await PM.getProductById(pid);
 
-    res.render("product", { product });
+    res.render("products", { product });
 });
 
-router.get("/realtimeproducts", (req, res) => {
+viewsRouter.get("/realtimeproducts", (req, res) => {
     res.render("realTimeProducts");
 });
 

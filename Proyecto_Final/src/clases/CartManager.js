@@ -1,5 +1,5 @@
 // import fs from "fs";
-import { cartModel } from "../models/cart.model";
+import { cartModel } from "../models/cart.model.js";
 
 class CartManager {
     //     constructor() {

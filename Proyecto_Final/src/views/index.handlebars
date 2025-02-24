@@ -1,5 +1,6 @@
-<div class="container">
+{{!-- <div class="container">
     <div class="row">
+        <h1>Lista de Productos</h1>
         {{#each products.payload}}
         <div class="col-md-3">
             <div class="card text-center border-0 fw-light">
@@ -29,11 +30,12 @@
             {{/if}}
         </div>
     </div>
-</div>
+</div> --}}
 
-{{!-- <h1>Lista de Productos</h1>
+<h1>Lista de Productos</h1>
 <ul>
     {{#each products.payload}}
+    <img src="{{this.thumbnails}}" alt="{{this.title}}">
     <li>{{this.title}} - ${{this.price}}</li>
     {{/each}}
-</ul> --}}
+</ul>

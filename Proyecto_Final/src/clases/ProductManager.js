@@ -40,7 +40,7 @@ class ProductManager {
 //         return products.find((product) => product.id === id);
 //     }
     async getProductById(id) {
-        const products = await productsModel.find({_id:id});
+        const products = await productsModel.findOne({_id:id}).lean();
         return products ? products : {"error":"No se encontró el Producto!"};
     }
 

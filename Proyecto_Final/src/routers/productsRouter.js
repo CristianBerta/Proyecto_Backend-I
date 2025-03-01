@@ -1,133 +1,104 @@
 import { Router } from "express";
-//import { productsModel } from "../models/products.model.js";
-import ProductManager from "../clases/ProductManager.js";
+import ProductManagerDB from "../dao/db/ProductManager.db.js";
 
 const productsRouter = Router();
-const PM = new ProductManager();
+const PM = new ProductManagerDB();
 
 productsRouter.get("/", async (req, res) => {
     try {
-        const products = PM.getProducts();
-        res.send(products);
-    } catch (error){
-        res.send({error:"Productos no encontrados"});
-        //console.log("Productos no encontrados");
+        // Extraer parámetros
+        const { limit = 10, page = 1, sort, category, status } = req.query;
+
+        // Construir objeto de opciones
+        const filterQuery = {};
+
+        // Agregar filtros
+        if (category) 
+            {filterQuery.category = category;}
+        if (status === "true" || status === "false") 
+            {filterQuery.status = status === "true";}
+
+        const options = {
+            limit: parseInt(limit),
+            page: parseInt(page),
+            sort,
+            query: filterQuery
+        };
+
+        // Obtener productos con filtros
+        const products = await PM.getProducts(options);
+
+        res.send({
+            status: "success",
+            payload: products.payload,
+            totalPages: products.totalPages,
+            prevPage: products.prevPage,
+            nextPage: products.nextPage,
+            page: products.page,
+            hasPrevPage: products.hasPrevPage,
+            hasNextPage: products.hasNextPage,
+            prevLink: products.hasPrevPage ? `/products?limit=${limit}&page=${products.prevPage}&sort=${sort}${category ? `&category=${category}` : ''}${status ? `&status=${status}` : ''}` : null,
+            nextLink: products.hasNextPage ? `/products?limit=${limit}&page=${products.nextPage}&sort=${sort}${category ? `&category=${category}` : ''}${status ? `&status=${status}` : ''}` : null
+        });
+        } catch (error) {
+            console.log("Error en obtener los Productos!", error);
+            res.status(500).send({ status: "error", message: "Error en obtener los Productos!" });
+        }
+});
+
+productsRouter.get("/:pid", async (req, res) => {
+    try {
+        const product = await PM.getProductById(req.params.pid);
+        if (product) {
+            res.json(product);
+        } else {
+            res.status(404).json({ error: "Producto no encontrado" });
+        }
+    } catch (error) {
+        res.status(500).json({ error: "Error al obtener el producto" });
     }
 });
 
-productsRouter.get("/:pid", (req, res) => {
-    const product = PM.getProductById(Number(req.params.pid));
-    if (product) {
-        res.send(product);
-    } else {
-        res.status(404).send({ error: "Producto no encontrado" });
+productsRouter.post("/", async (req, res) => {
+    try {
+        const { title, description, code, price, status, stock, category, thumbnails } = req.body;
+        if (!title || !description || !code || !price || !stock || !category) {
+            return res.status(400).json({ error: "Faltan campos obligatorios" });
+        }
+        const newProduct = await PM.addProduct({ title, description, code, price, status, stock, category, thumbnails });
+        res.status(201).json(newProduct);
+    } catch (error) {
+        console.error("Error al crear el producto:", error);
+        res.status(500).json({ error: "Error al crear el producto" });
     }
 });
 
-productsRouter.post("/", (req, res) => {
-    const { title, description, code, price, status, stock, category, thumbnails } = req.body;
-    if (!title || !description || !code || !price || !stock || !category) {
-        return res.status(400).send({ error: "Faltan campos obligatorios" });
+productsRouter.put("/:pid", async (req, res) => {
+    try {
+        const updatedProduct = await PM.updateProduct(req.params.pid, req.body);
+        if (updatedProduct) {
+            res.json(updatedProduct);
+        } else {
+            res.status(404).json({ error: "Producto no encontrado" });
+        }
+    } catch (error) {
+        console.error("Error al actualizar el producto:", error);
+        res.status(500).json({ error: "Error al actualizar el producto" });
     }
-    const newProduct = PM.addProduct({ title, description, code, price, status, stock, category, thumbnails });
-    res.status(201).send(newProduct);
 });
 
-productsRouter.put("/:pid", (req, res) => {
-    const pid = req.params.pid;
-    const { title, description, code, price, status, stock, category, thumbnails } = req.body;
-    if (!title || !description || !code || !price || !stock || !category) {
-        return res.status(400).send({ error: "Faltan campos obligatorios" });
-    }
-    const newProduct = PM.editProduct(pid, { title, description, code, price, status, stock, category, thumbnails });
-    res.status(201).send(newProduct);
-});
-
-productsRouter.delete("/:pid", (req, res) => {
-    const deleted = PM.deleteProduct(Number(req.params.pid));
-    if (deleted) {
-        res.send({ message: "Producto eliminado" });
-    } else {
-        res.status(404).send({ error: "Producto no encontrado" });
+productsRouter.delete("/:pid", async (req, res) => {
+    try {
+        const deleted = await PM.deleteProduct(req.params.pid);
+        if (deleted) {
+            res.json({ message: "Producto eliminado" });
+        } else {
+            res.status(404).json({ error: "Producto no encontrado" });
+        }
+    } catch (error) {
+        console.error("Error al eliminar el producto:", error);
+        res.status(500).json({ error: "Error al eliminar el producto" });
     }
 });
 
 export default productsRouter;
-
-//--------------//
-// router.get("/", async (req, res) => {
-//     const { limit = 10, page = 1, sort, query } = req.query;
-    
-//     const filter = query ? { $or: [{ category: query }, { status: query === "true" }] } : {};
-
-//     const options = {
-//         limit: parseInt(limit),
-//         page: parseInt(page),
-//         sort: sort ? { price: sort === "asc" ? 1 : -1 } : {},
-//     };
-
-//     const products = await productsModel.paginate(filter, options);
-
-//     res.json({
-//         status: "success",
-//         payload: products.docs,
-//         totalPages: products.totalPages,
-//         prevPage: products.prevPage,
-//         nextPage: products.nextPage,
-//         page: products.page,
-//         hasPrevPage: products.hasPrevPage,
-//         hasNextPage: products.hasNextPage,
-//         prevLink: products.hasPrevPage ? `/api/products?page=${products.prevPage}` : null,
-//         nextLink: products.hasNextPage ? `/api/products?page=${products.nextPage}` : null,
-//     });
-// });
-
-//-----------------------//
-// import { Router } from "express";
-// import ProductManager from "../clases/ProductManager.js";
-
-// const productsRouter = Router();
-// const PM = new ProductManager();
-
-// productsRouter.get("/", async (req, res) => {
-//     const products = PM.getProducts();
-//     res.json(products);
-// });
-
-// productsRouter.get("/:pid", (req, res) => {
-//     const product = PM.getProductById(Number(req.params.pid));
-//     if (product) {
-//         res.json(product);
-//     } else {
-//         res.status(404).json({ error: "Producto no encontrado" });
-//     }
-// });
-
-// productsRouter.post("/", (req, res) => {
-//     const { title, description, code, price, status, stock, category, thumbnails } = req.body;
-//     if (!title || !description || !code || !price || !stock || !category) {
-//         return res.status(400).json({ error: "Faltan campos obligatorios" });
-//     }
-//     const newProduct = PM.addProduct({ title, description, code, price, status, stock, category, thumbnails });
-//     res.status(201).json(newProduct);
-// });
-
-// productsRouter.put("/:pid", (req, res) => {
-//     const updatedProduct = PM.updateProduct(Number(req.params.pid), req.body);
-//     if (updatedProduct) {
-//         res.json(updatedProduct);
-//     } else {
-//         res.status(404).json({ error: "Producto no encontrado" });
-//     }
-// });
-
-// productsRouter.delete("/:pid", (req, res) => {
-//     const deleted = PM.deleteProduct(Number(req.params.pid));
-//     if (deleted) {
-//         res.json({ message: "Producto eliminado" });
-//     } else {
-//         res.status(404).json({ error: "Producto no encontrado" });
-//     }
-// });
-
-// export default productsRouter;
